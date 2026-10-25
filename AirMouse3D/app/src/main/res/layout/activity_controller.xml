@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_dark"
+    tools:context=".ControllerActivity">
+
+    <!-- Status bar (UI-6) -->
+    <TextView
+        android:id="@+id/tvStatus"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:padding="12dp"
+        android:textColor="@color/text_secondary"
+        android:textSize="11sp"
+        android:fontFamily="monospace"
+        android:background="@color/bg_surface"
+        android:text="Connecting…"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- ROTATE — large, center top (Section 9.3) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnRotate"
+        android:layout_width="0dp"
+        android:layout_height="90dp"
+        android:text="⟳  ROTATE\n(hold)"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@color/btn_rotate_text"
+        android:backgroundTint="@color/btn_rotate_bg"
+        app:cornerRadius="14dp"
+        android:layout_marginHorizontal="24dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/tvStatus"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- LEFT / RIGHT row -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnLeft"
+        android:layout_width="0dp"
+        android:layout_height="110dp"
+        android:text="◀  LEFT"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/btn_primary_text"
+        android:backgroundTint="@color/btn_primary_bg"
+        app:cornerRadius="14dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/btnRotate"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btnRight"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnRight"
+        android:layout_width="0dp"
+        android:layout_height="110dp"
+        android:text="RIGHT  ▶"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/btn_primary_text"
+        android:backgroundTint="@color/btn_primary_bg"
+        app:cornerRadius="14dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/btnRotate"
+        app:layout_constraintStart_toEndOf="@id/btnLeft"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- ZOOM IN / ZOOM OUT row -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnZoomIn"
+        android:layout_width="0dp"
+        android:layout_height="100dp"
+        android:text="🔍  ZOOM +"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:textColor="@color/btn_zoom_text"
+        android:backgroundTint="@color/btn_zoom_bg"
+        app:cornerRadius="14dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/btnLeft"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btnZoomOut"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnZoomOut"
+        android:layout_width="0dp"
+        android:layout_height="100dp"
+        android:text="🔍  ZOOM -"
+        android:textSize="17sp"
+        android:textStyle="bold"
+        android:textColor="@color/btn_zoom_text"
+        android:backgroundTint="@color/btn_zoom_bg"
+        app:cornerRadius="14dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/btnRight"
+        app:layout_constraintStart_toEndOf="@id/btnZoomIn"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- RECENTER -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnRecenter"
+        android:layout_width="0dp"
+        android:layout_height="72dp"
+        android:text="⊙  RECENTER"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:backgroundTint="@color/btn_recenter_bg"
+        android:textColor="@color/btn_recenter_text"
+        app:cornerRadius="14dp"
+        android:layout_marginHorizontal="24dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintTop_toBottomOf="@id/btnZoomIn"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- DISCONNECT -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnDisconnect"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:text="Disconnect"
+        android:textSize="13sp"
+        android:backgroundTint="@color/btn_disconnect_bg"
+        android:textColor="@color/text_secondary"
+        app:cornerRadius="10dp"
+        android:layout_marginBottom="20dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

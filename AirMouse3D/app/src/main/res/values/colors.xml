@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Backgrounds -->
+    <color name="bg_dark">#0D0F14</color>
+    <color name="bg_surface">#161B25</color>
+
+    <!-- Text -->
+    <color name="text_primary">#E8EAED</color>
+    <color name="text_secondary">#7A8499</color>
+
+    <!-- Accent -->
+    <color name="accent_blue">#4A90E2</color>
+
+    <!-- Button: LEFT / RIGHT (primary) -->
+    <color name="btn_primary_bg">#1E3A5F</color>
+    <color name="btn_primary_text">#7EC8FF</color>
+
+    <!-- Button: ROTATE -->
+    <color name="btn_rotate_bg">#2D1B4E</color>
+    <color name="btn_rotate_text">#C084FC</color>
+
+    <!-- Button: ZOOM -->
+    <color name="btn_zoom_bg">#1A3D2B</color>
+    <color name="btn_zoom_text">#4ADE80</color>
+
+    <!-- Button: RECENTER -->
+    <color name="btn_recenter_bg">#3B2A0E</color>
+    <color name="btn_recenter_text">#FCD34D</color>
+
+    <!-- Button: DISCONNECT -->
+    <color name="btn_disconnect_bg">#1C1C1C</color>
+</resources>
