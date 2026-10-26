@@ -232,4 +232,4 @@ This generates realistic 60 Hz figure-8 spatial movement, periodic button clicks
 ---
 
 ## 👤 Author
-- **Dishant Goti** — [GitHub Profile](https://github.com/Dishant-Gotis)
+- **Dishant Gotis** — [GitHub Profile](https://github.com/Dishant-Gotis)
