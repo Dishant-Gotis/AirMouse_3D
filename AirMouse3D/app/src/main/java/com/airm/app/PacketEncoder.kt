@@ -1,72 +1,130 @@
 package com.airm.app
 
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
+import org.json.JSONArray
+import org.json.JSONObject
 
 /**
- * PacketEncoder — builds the 52-byte binary SENSOR packet (Section 8.3, QA-1).
+ * PacketEncoder — builds JSON UDP packets per the new protocol spec.
  *
- * Layout (little-endian):
- *   0-1   uint16  magic       = 0x3D4D
- *   2     uint8   version     = 1
- *   3     uint8   type        = 1 (SENSOR)
- *   4-5   uint16  seq
- *   6-7   uint16  buttons
- *   8-11  uint32  timestamp_ms
- *   12-27 float32 qw,qx,qy,qz
- *   28-39 float32 gx,gy,gz
- *   40-51 float32 ax,ay,az
+ * Two packet types:
  *
- * Rules: COM-1 (52-byte UDP datagram), COM-6 (reuse buffer).
+ * 1. INPUT — sent every tick (~60 Hz):
+ *    { "version":1, "device_id":"mobile-01", "seq":N, "type":"input",
+ *      "delta":{"x":0.12,"y":-0.04,"z":0.00},
+ *      "buttons":{"left":false,"orbit":true,"zoom":false,"calibrate":false} }
+ *
+ * 2. CALIBRATE — sent on demand when user taps Calibrate:
+ *    { "version":1, "device_id":"mobile-01", "seq":N, "type":"calibrate",
+ *      "reference":{"forward":[...],"up":[...],"right":[...]} }
+ *
+ * Note: JSON inherently allocates strings; we minimise overhead by
+ * reusing the JSONObject where possible but cannot achieve zero-GC
+ * like the old binary encoder.
  */
 class PacketEncoder {
 
     companion object {
-        const val MAGIC: Short   = 0x3D4D.toShort()
-        const val VERSION: Byte  = 1
-        const val TYPE_SENSOR: Byte = 1
-        const val PACKET_SIZE    = 52
+        const val PROTOCOL_VERSION = 1
+        const val TYPE_INPUT     = "input"
+        const val TYPE_CALIBRATE = "calibrate"
 
-        // Button bitmask constants (Section 8.4)
-        const val BTN_LEFT     = 0x0001
-        const val BTN_RIGHT    = 0x0002
-        const val BTN_ZOOM_IN  = 0x0004
-        const val BTN_ZOOM_OUT = 0x0008
-        const val BTN_ROTATE   = 0x0010
-        const val BTN_RECENTER = 0x0020
+        // UI-side button bitmask constants (used by ControllerActivity)
+        const val BTN_LEFT      = 0x0001
+        const val BTN_RIGHT     = 0x0002   // kept for UI; not in protocol
+        const val BTN_ZOOM_IN   = 0x0004
+        const val BTN_ZOOM_OUT  = 0x0008
+        const val BTN_ROTATE    = 0x0010   // maps to "orbit"
+        const val BTN_RECENTER  = 0x0020   // maps to "calibrate"
     }
 
-    // COM-6: pre-allocated buffer, reused every packet — zero GC pressure
-    private val buffer = ByteBuffer.allocate(PACKET_SIZE).order(ByteOrder.LITTLE_ENDIAN)
-    val bytes: ByteArray = buffer.array()   // expose backing array for DatagramPacket
+    private var deviceId = "mobile-01"
+
+    /** Last-encoded packet bytes, ready for UDP send. */
+    var bytes: ByteArray = ByteArray(0)
+        private set
+    var packetSize: Int = 0
+        private set
+
+    fun setDeviceId(id: String) { deviceId = id }
 
     /**
-     * Fill the buffer with a new SENSOR packet. Call this before sending.
+     * Encode an INPUT packet.
      *
-     * @param seq          packet sequence number (wraps at 65535, COM-5)
-     * @param buttons      bitmask of currently pressed buttons (Section 8.4)
-     * @param timestampMs  ms since app start (uint32 range, COM-3)
-     * @param qw,qx,qy,qz unit quaternion — game rotation vector (SEN-2, SEN-3)
-     * @param gx,gy,gz     gyroscope in rad/s                    (SEN-3)
-     * @param ax,ay,az     linear acceleration in m/s²           (SEN-3)
+     * @param seq        monotonically increasing sequence number
+     * @param deltaX     relative horizontal movement (yaw delta, degrees)
+     * @param deltaY     relative vertical movement (pitch delta, degrees)
+     * @param deltaZ     relative depth movement (zoom delta or 0)
+     * @param btnLeft    left-click held
+     * @param btnOrbit   orbit (rotate scene) held
+     * @param btnZoom    zoom mode active
+     * @param btnCalibrate calibrate button active this tick
      */
-    fun encode(
+    fun encodeInput(
         seq: Int,
-        buttons: Int,
-        timestampMs: Long,
-        qw: Float, qx: Float, qy: Float, qz: Float,
-        gx: Float, gy: Float, gz: Float,
-        ax: Float, ay: Float, az: Float,
+        deltaX: Float, deltaY: Float, deltaZ: Float,
+        btnLeft: Boolean, btnOrbit: Boolean,
+        btnZoom: Boolean, btnCalibrate: Boolean,
     ) {
-        buffer.rewind()
-        buffer.putShort(MAGIC)
-        buffer.put(VERSION)
-        buffer.put(TYPE_SENSOR)
-        buffer.putShort((seq and 0xFFFF).toShort())
-        buffer.putShort((buttons and 0xFFFF).toShort())
-        buffer.putInt((timestampMs and 0xFFFFFFFFL).toInt())
-        buffer.putFloat(qw); buffer.putFloat(qx); buffer.putFloat(qy); buffer.putFloat(qz)
-        buffer.putFloat(gx); buffer.putFloat(gy); buffer.putFloat(gz)
-        buffer.putFloat(ax); buffer.putFloat(ay); buffer.putFloat(az)
+        val json = JSONObject()
+        json.put("version", PROTOCOL_VERSION)
+        json.put("device_id", deviceId)
+        json.put("seq", seq)
+        json.put("type", TYPE_INPUT)
+
+        val delta = JSONObject()
+        delta.put("x", roundTo4(deltaX))
+        delta.put("y", roundTo4(deltaY))
+        delta.put("z", roundTo4(deltaZ))
+        json.put("delta", delta)
+
+        val buttons = JSONObject()
+        buttons.put("left", btnLeft)
+        buttons.put("orbit", btnOrbit)
+        buttons.put("zoom", btnZoom)
+        buttons.put("calibrate", btnCalibrate)
+        json.put("buttons", buttons)
+
+        bytes = json.toString().toByteArray(Charsets.UTF_8)
+        packetSize = bytes.size
     }
+
+    /**
+     * Encode a CALIBRATE packet with the current reference frame vectors.
+     *
+     * @param seq      sequence number (shares counter with input packets)
+     * @param forward  forward direction vector [x, y, z]
+     * @param up       up direction vector [x, y, z]
+     * @param right    right direction vector [x, y, z]
+     */
+    fun encodeCalibrate(
+        seq: Int,
+        forward: FloatArray,
+        up: FloatArray,
+        right: FloatArray,
+    ) {
+        val json = JSONObject()
+        json.put("version", PROTOCOL_VERSION)
+        json.put("device_id", deviceId)
+        json.put("seq", seq)
+        json.put("type", TYPE_CALIBRATE)
+
+        val reference = JSONObject()
+        reference.put("forward", floatArrayToJson(forward))
+        reference.put("up", floatArrayToJson(up))
+        reference.put("right", floatArrayToJson(right))
+        json.put("reference", reference)
+
+        bytes = json.toString().toByteArray(Charsets.UTF_8)
+        packetSize = bytes.size
+    }
+
+    // ── Helpers ─────────────────────────────────────────────────────────────
+    private fun floatArrayToJson(arr: FloatArray): JSONArray {
+        val ja = JSONArray()
+        for (v in arr) ja.put(roundTo4(v))
+        return ja
+    }
+
+    private fun roundTo4(v: Float): Double =
+        Math.round(v * 10000.0).toDouble() / 10000.0
 }

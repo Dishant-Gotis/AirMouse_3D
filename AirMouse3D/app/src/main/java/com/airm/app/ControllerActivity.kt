@@ -23,10 +23,10 @@ import java.util.concurrent.atomic.AtomicInteger
  * ControllerActivity — Screen 2 (Section 9.2, 9.3)
  *
  * Buttons:
- *   LEFT, RIGHT        — COM-4: state sent in every packet; click triggers immediate extra
- *   ZOOM IN, ZOOM OUT  — held
- *   ROTATE             — held; engages rotate mode in simulator
- *   RECENTER           — edge-triggered tap
+ *   LEFT, RIGHT        — click triggers; state sent in every packet
+ *   ZOOM IN, ZOOM OUT  — held; maps to protocol "zoom" + delta.z direction
+ *   ORBIT (ROTATE)     — held; engages orbit mode in simulator
+ *   CALIBRATE          — edge-triggered tap; sends calibrate packet
  *
  * Rules: UI-1 (thin), UI-2 (atomic bitmask, multi-touch), UI-3 (no heavy work),
  *        UI-4 (large buttons), UI-5 (screen locked portrait), UI-6 (status display),
@@ -66,7 +66,16 @@ class ControllerActivity : AppCompatActivity() {
         startStatusUpdater()
         
         // Start streaming on a background thread (COM-2 — network off main thread)
-        Thread({ sender.start() }, "SenderStartThread").start()
+        Thread({
+            try {
+                sender.start()
+            } catch (e: Exception) {
+                android.util.Log.e("ControllerActivity", "Unable to start sensor sender", e)
+                runOnUiThread {
+                    binding.tvStatus.text = "Connection failed: ${e.message ?: "unknown error"}"
+                }
+            }
+        }, "SenderStartThread").start()
 
         binding.tvStatus.text = "Connecting to $host:$port…"
     }
@@ -74,7 +83,7 @@ class ControllerActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         uiHandler.removeCallbacksAndMessages(null)
-        Thread({ sender.stop() }, "SenderStopThread").start()
+        sender.stop()
     }
 
     // ── Button wiring (UI-2: multi-touch, atomic bitmask) ──────────────────────
@@ -102,8 +111,11 @@ class ControllerActivity : AppCompatActivity() {
         binding.btnZoomOut.onHold(BTN_ZOOM_OUT)
         binding.btnRotate.onHold(BTN_ROTATE)
 
-        // Recenter: edge-triggered tap — set bit briefly then clear (Section 8.4)
-        binding.btnRecenter.setOnClickListener {
+        // Calibrate: edge-triggered tap — calls calibrate() on the sender
+        // Also briefly sets BTN_RECENTER so the protocol "calibrate" button
+        // is true for one send cycle
+        binding.btnCalibrate.setOnClickListener {
+            sender.calibrate()
             buttonBits.updateAndGet { it or BTN_RECENTER }
             sender.buttons = buttonBits.get()
             // Clear after one send cycle (~20 ms)
@@ -120,23 +132,52 @@ class ControllerActivity : AppCompatActivity() {
     // ── Status HUD (UI-6) ─────────────────────────────────────────────────────
 
     private fun startStatusUpdater() {
+        var tickCount = 0
         val runnable = object : Runnable {
             override fun run() {
-                val sent   = sender.packetsSent
-                val errors = sender.sendErrors
-                val bits   = buttonBits.get()
-                val btnStr = buildString {
-                    if (bits and BTN_LEFT     != 0) append("L ")
-                    if (bits and BTN_RIGHT    != 0) append("R ")
-                    if (bits and BTN_ZOOM_IN  != 0) append("Z+ ")
-                    if (bits and BTN_ZOOM_OUT != 0) append("Z- ")
-                    if (bits and BTN_ROTATE   != 0) append("ROT ")
-                    if (isEmpty()) append("—")
-                }
-                binding.tvStatus.text =
-                    "Sent: $sent  Errors: $errors  Buttons: $btnStr"
+                // Real-time sensor snapshot update (~12.5 Hz, every 80 ms)
+                val snap = sender.getSnapshot()
+                binding.tvSensorRate.text = "${sender.rateHz} Hz"
+                binding.tvSensorAngles.text = String.format(
+                    java.util.Locale.US,
+                    "YAW: %+6.1f°  PITCH: %+6.1f°  ROLL: %+6.1f°",
+                    snap.yawDeg, snap.pitchDeg, snap.rollDeg
+                )
+                binding.tvSensorGyro.text = String.format(
+                    java.util.Locale.US,
+                    "GYRO (rad/s) : gx:%+5.2f gy:%+5.2f gz:%+5.2f",
+                    snap.gx, snap.gy, snap.gz
+                )
+                binding.tvSensorAccel.text = String.format(
+                    java.util.Locale.US,
+                    "ACCEL(m/s²)  : ax:%+5.2f ay:%+5.2f az:%+5.2f",
+                    snap.ax, snap.ay, snap.az
+                )
+                binding.tvSensorQuat.text = String.format(
+                    java.util.Locale.US,
+                    "DELTA  dx:%+.3f  dy:%+.3f  dz:%+.3f",
+                    snap.deltaX, snap.deltaY, snap.deltaZ
+                )
 
-                uiHandler.postDelayed(this, 500L)
+                // Status text updated every ~480 ms (every 6 ticks)
+                if (tickCount++ % 6 == 0) {
+                    val sent   = snap.packetsSent
+                    val errors = snap.sendErrors
+                    val bits   = buttonBits.get()
+                    val btnStr = buildString {
+                        if (bits and BTN_LEFT     != 0) append("L ")
+                        if (bits and BTN_RIGHT    != 0) append("R ")
+                        if (bits and BTN_ZOOM_IN  != 0) append("Z+ ")
+                        if (bits and BTN_ZOOM_OUT != 0) append("Z- ")
+                        if (bits and BTN_ROTATE   != 0) append("ORB ")
+                        if (bits and BTN_RECENTER != 0) append("CAL ")
+                        if (isEmpty()) append("—")
+                    }
+                    binding.tvStatus.text =
+                        "Sent: $sent  Errors: $errors  Buttons: $btnStr  [${sender.host}:${sender.port}]"
+                }
+
+                uiHandler.postDelayed(this, 80L)
             }
         }
         uiHandler.post(runnable)

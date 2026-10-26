@@ -1,0 +1,48 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Android toolchain diagnostics",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-ExecutionPolicy",
+				"Bypass",
+				"-Command",
+				"$names = @('adb','gradle','java'); foreach ($name in $names) { $cmd = Get-Command $name -ErrorAction SilentlyContinue; if ($null -eq $cmd) { Write-Output ($name + ': NOT FOUND') } else { Write-Output ($name + ': ' + $cmd.Source) } }; if (Get-Command adb -ErrorAction SilentlyContinue) { adb devices -l }"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Android executable diagnostics",
+			"type": "shell",
+			"command": "where.exe",
+			"args": [
+				"adb",
+				"gradle",
+				"java"
+			],
+			"isBackground": false,
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Start AirMouse simulator",
+			"type": "shell",
+			"command": "python",
+			"args": [
+				"simulator\\app.py",
+				"--host",
+				"0.0.0.0",
+				"--port",
+				"9000"
+			],
+			"isBackground": true,
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

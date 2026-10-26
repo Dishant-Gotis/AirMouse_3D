@@ -1,0 +1,22 @@
+[
+    {
+        "merged": "C:\\Users\\ASUS\\.gradle\\daemon\\9.6.0\\com.airm.app-debug-32:\\drawable_live_dot.xml.flat",
+        "source": "C:\\Users\\ASUS\\.gradle\\daemon\\9.6.0\\com.airm.app-main-34:\\drawable\\live_dot.xml"
+    },
+    {
+        "merged": "C:\\Users\\ASUS\\.gradle\\daemon\\9.6.0\\com.airm.app-debug-32:\\layout_activity_controller.xml.flat",
+        "source": "C:\\Users\\ASUS\\.gradle\\daemon\\9.6.0\\com.airm.app-main-34:\\layout\\activity_controller.xml"
+    },
+    {
+        "merged": "com.airm.app-debug-32:/layout_activity_controller.xml.flat",
+        "source": "com.airm.app-main-34:/layout/activity_controller.xml"
+    },
+    {
+        "merged": "C:\\Users\\ASUS\\.gradle\\daemon\\9.6.0\\com.airm.app-debug-32:\\layout_activity_connection.xml.flat",
+        "source": "C:\\Users\\ASUS\\.gradle\\daemon\\9.6.0\\com.airm.app-main-34:\\layout\\activity_connection.xml"
+    },
+    {
+        "merged": "C:\\Users\\ASUS\\.gradle\\daemon\\9.6.0\\com.airm.app-debug-32:\\drawable_ic_launcher.xml.flat",
+        "source": "C:\\Users\\ASUS\\.gradle\\daemon\\9.6.0\\com.airm.app-main-34:\\drawable\\ic_launcher.xml"
+    }
+]

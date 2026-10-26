@@ -99,4 +99,13 @@
         android:textSize="12sp"
         android:gravity="center"/>
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="USB testing: use host 127.0.0.1 after running\nadb reverse tcp:9000 tcp:9000"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        android:gravity="center"/>
+
 </LinearLayout>

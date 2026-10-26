@@ -135,10 +135,10 @@ async def start_receiver(
     protocol = protocol  # type: SensorUDPProtocol
 
     ips = _local_ips()
-    print("\033[1;32m━━━ 3D Monitor Simulator ━━━\033[0m")
+    print("\033[1;32m=== 3D Monitor Simulator ===\033[0m")
     print(f"\033[1mListening on UDP port {port}\033[0m")
     for ip in ips:
-        print(f"  → Enter  \033[1;33m{ip}:{port}\033[0m  in the phone app")
+        print(f"  Enter \033[1;33m{ip}:{port}\033[0m in the phone app")
     print("\033[2m(or use 10.0.2.2 from the Android emulator)\033[0m")
     print()
 

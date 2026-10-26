@@ -1,0 +1,16 @@
+#Mon Oct 26 05:38:44 IST 2026
+base.0=D\:\\GIT-REPOS\\TS_App\\AirMouse3D\\app\\build\\intermediates\\dex\\debug\\mergeExtDexDebug\\classes.dex
+base.1=D\:\\GIT-REPOS\\TS_App\\AirMouse3D\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\0\\classes.dex
+base.2=D\:\\GIT-REPOS\\TS_App\\AirMouse3D\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\4\\classes.dex
+base.3=D\:\\GIT-REPOS\\TS_App\\AirMouse3D\\app\\build\\intermediates\\dex\\debug\\mergeProjectDexDebug\\8\\classes.dex
+base.4=D\:\\GIT-REPOS\\TS_App\\AirMouse3D\\app\\build\\intermediates\\global_synthetics_dex\\debug\\generateDebugGlobalSynthetics\\classes.dex
+path.0=classes.dex
+path.1=0/classes.dex
+path.2=4/classes.dex
+path.3=8/classes.dex
+path.4=classes.dex
+renamed.0=classes.dex
+renamed.1=classes2.dex
+renamed.2=classes3.dex
+renamed.3=classes4.dex
+renamed.4=classes5.dex

@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AirMouse 3D — Real-time Sensor Hub & Telemetry</title>
+  <meta name="description" content="Real-time 60Hz UDP telemetry and sensor data visualizer for AirMouse3D mobile controller.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Top Navigation & Connection Status -->
+    <header class="top-nav">
+      <div class="brand">
+        <div class="brand-logo">
+          <div class="logo-core"></div>
+          <div class="logo-ring"></div>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">AirMouse <span>3D</span></h1>
+          <span class="brand-subtitle">Telemetry & Sensor Hub</span>
+        </div>
+      </div>
+
+      <!-- Quick Connection Info Box -->
+      <div class="connection-pill">
+        <div class="status-indicator">
+          <span class="status-dot" id="connection-dot"></span>
+          <span class="status-text" id="connection-status">Connecting to Hub...</span>
+        </div>
+        <div class="ip-info-box">
+          <span class="ip-label">App Target:</span>
+          <code class="ip-value" id="display-ip">192.168.1.44:9000</code>
+          <button class="btn-icon" id="copy-ip-btn" title="Copy IP & Port to Clipboard">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="header-actions">
+        <button class="btn btn-secondary" id="toggle-mock-btn">
+          <span class="btn-dot" id="mock-dot"></span>
+          <span id="mock-btn-text">Test Simulation</span>
+        </button>
+        <button class="btn btn-ghost" id="reset-stats-btn" title="Reset packet statistics">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+          Reset
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Metrics Row -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Update Rate</span>
+          <span class="metric-badge" id="rate-badge">Target: 60Hz</span>
+        </div>
+        <div class="metric-value-row">
+          <span class="metric-num" id="stat-rate">0.0</span>
+          <span class="metric-unit">Hz</span>
+        </div>
+        <div class="metric-bar-bg">
+          <div class="metric-bar-fill" id="stat-rate-bar" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Packets Received</span>
+          <span class="metric-badge subtle">UDP Port 9000</span>
+        </div>
+        <div class="metric-value-row">
+          <span class="metric-num" id="stat-packets">0</span>
+          <span class="metric-unit">pkts</span>
+        </div>
+        <div class="metric-sub">Seq: <span id="stat-seq">--</span></div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Packet Loss</span>
+          <span class="metric-badge warning" id="loss-badge">0.0%</span>
+        </div>
+        <div class="metric-value-row">
+          <span class="metric-num" id="stat-dropped">0</span>
+          <span class="metric-unit">dropped</span>
+        </div>
+        <div class="metric-sub">Strict sequence check</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-header">
+          <span class="metric-title">Source Device</span>
+          <span class="metric-badge accent" id="source-ip-badge">UDP</span>
+        </div>
+        <div class="metric-value-row">
+          <span class="metric-device" id="stat-device">None</span>
+        </div>
+        <div class="metric-sub" id="stat-source-addr">Waiting for sender...</div>
+      </div>
+    </section>
+
+    <!-- Main Workspace Grid -->
+    <main class="dashboard-grid">
+      <!-- Left Column: 3D Visualization & 2D Motion Path -->
+      <section class="card col-span-7">
+        <div class="card-header">
+          <div class="card-title-group">
+            <h2 class="card-title">Real-Time Spatial Motion</h2>
+            <span class="card-subtitle">3D Phone Orientation & 2D Delta Trajectory</span>
+          </div>
+          <div class="card-controls">
+            <button class="chip active" id="btn-recenter-view">Recenter 3D</button>
+            <button class="chip" id="btn-clear-canvas">Clear Trail</button>
+          </div>
+        </div>
+
+        <div class="spatial-display-container">
+          <!-- 3D Phone Perspective Viewport -->
+          <div class="viewport-3d">
+            <div class="grid-floor"></div>
+            <div class="device-3d" id="virtual-phone">
+              <div class="phone-face phone-front">
+                <div class="phone-screen">
+                  <div class="phone-notch"></div>
+                  <div class="phone-hud">
+                    <span class="hud-logo">AIRMOUSE</span>
+                    <span class="hud-status" id="phone-hud-status">STANDBY</span>
+                  </div>
+                </div>
+              </div>
+              <div class="phone-face phone-back"></div>
+              <div class="phone-face phone-left"></div>
+              <div class="phone-face phone-right"></div>
+              <div class="phone-face phone-top"></div>
+              <div class="phone-face phone-bottom"></div>
+            </div>
+            <div class="axis-guide">
+              <span class="axis-item red">X (Pitch)</span>
+              <span class="axis-item green">Y (Roll)</span>
+              <span class="axis-item blue">Z (Yaw)</span>
+            </div>
+          </div>
+
+          <!-- 2D Canvas Cursor Movement Trail -->
+          <div class="trajectory-wrapper">
+            <div class="canvas-label">2D Cursor Plane (ΔX / ΔY)</div>
+            <canvas id="trajectory-canvas" width="360" height="260"></canvas>
+            <div class="cursor-crosshair"></div>
+          </div>
+        </div>
+
+        <!-- Delta Axis Telemetry Gauges -->
+        <div class="delta-gauges">
+          <div class="gauge-item">
+            <div class="gauge-head">
+              <span class="gauge-axis x">Delta X</span>
+              <span class="gauge-val" id="val-delta-x">0.0000</span>
+            </div>
+            <div class="gauge-meter-wrapper">
+              <div class="gauge-meter-center"></div>
+              <div class="gauge-meter-bar x" id="bar-delta-x" style="left: 50%; width: 0%;"></div>
+            </div>
+          </div>
+
+          <div class="gauge-item">
+            <div class="gauge-head">
+              <span class="gauge-axis y">Delta Y</span>
+              <span class="gauge-val" id="val-delta-y">0.0000</span>
+            </div>
+            <div class="gauge-meter-wrapper">
+              <div class="gauge-meter-center"></div>
+              <div class="gauge-meter-bar y" id="bar-delta-y" style="left: 50%; width: 0%;"></div>
+            </div>
+          </div>
+
+          <div class="gauge-item">
+            <div class="gauge-head">
+              <span class="gauge-axis z">Delta Z (Zoom)</span>
+              <span class="gauge-val" id="val-delta-z">0.0000</span>
+            </div>
+            <div class="gauge-meter-wrapper">
+              <div class="gauge-meter-center"></div>
+              <div class="gauge-meter-bar z" id="bar-delta-z" style="left: 50%; width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Buttons, Calibration, & Inspector -->
+      <section class="card col-span-5 flex-col">
+        <!-- Buttons Telemetry -->
+        <div class="sub-panel">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h3 class="card-title">Live Button States</h3>
+              <span class="card-subtitle">Synchronized controller inputs</span>
+            </div>
+          </div>
+          <div class="button-grid">
+            <div class="btn-card" id="btn-state-left">
+              <div class="btn-card-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2a10 10 0 0 0-10 10c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"></path>
+                </svg>
+              </div>
+              <div class="btn-card-text">
+                <span class="btn-name">LEFT CLICK</span>
+                <span class="btn-status" id="txt-btn-left">RELEASED</span>
+              </div>
+              <div class="btn-glow-ring"></div>
+            </div>
+
+            <div class="btn-card" id="btn-state-orbit">
+              <div class="btn-card-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"></circle>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+              </div>
+              <div class="btn-card-text">
+                <span class="btn-name">ORBIT MODE</span>
+                <span class="btn-status" id="txt-btn-orbit">RELEASED</span>
+              </div>
+              <div class="btn-glow-ring"></div>
+            </div>
+
+            <div class="btn-card" id="btn-state-zoom">
+              <div class="btn-card-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  <line x1="11" y1="8" x2="11" y2="14"></line>
+                  <line x1="8" y1="11" x2="14" y2="11"></line>
+                </svg>
+              </div>
+              <div class="btn-card-text">
+                <span class="btn-name">ZOOM</span>
+                <span class="btn-status" id="txt-btn-zoom">RELEASED</span>
+              </div>
+              <div class="btn-glow-ring"></div>
+            </div>
+
+            <div class="btn-card" id="btn-state-calibrate">
+              <div class="btn-card-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+                </svg>
+              </div>
+              <div class="btn-card-text">
+                <span class="btn-name">CALIBRATE</span>
+                <span class="btn-status" id="txt-btn-calib">STANDBY</span>
+              </div>
+              <div class="btn-glow-ring"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calibration Reference Frame Display -->
+        <div class="sub-panel">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h3 class="card-title">Calibration Reference Frame</h3>
+              <span class="card-subtitle">Orthogonal basis vectors</span>
+            </div>
+            <span class="badge-tag" id="last-calib-time">No calibration yet</span>
+          </div>
+          <div class="vector-display-grid">
+            <div class="vector-box">
+              <span class="vec-label blue">Forward (Z)</span>
+              <code class="vec-val" id="vec-forward">[0.00, 0.00, 1.00]</code>
+            </div>
+            <div class="vector-box">
+              <span class="vec-label green">Up (Y)</span>
+              <code class="vec-val" id="vec-up">[0.00, 1.00, 0.00]</code>
+            </div>
+            <div class="vector-box">
+              <span class="vec-label red">Right (X)</span>
+              <code class="vec-val" id="vec-right">[1.00, 0.00, 0.00]</code>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live JSON Packet Inspector -->
+        <div class="sub-panel flex-1">
+          <div class="card-header">
+            <div class="card-title-group">
+              <h3 class="card-title">Live Datagram Inspector</h3>
+              <span class="card-subtitle">Raw JSON UDP Stream</span>
+            </div>
+            <div class="card-controls">
+              <button class="chip" id="btn-pause-stream">Pause Stream</button>
+              <button class="chip" id="btn-copy-json">Copy JSON</button>
+            </div>
+          </div>
+          <div class="terminal-container">
+            <pre><code class="terminal-body" id="raw-json-stream">// Waiting for UDP datagrams on port 9000...
+// Connect the Android app to the IP shown above.</code></pre>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Bottom Instruction Footer -->
+    <footer class="app-footer">
+      <div class="instruction-row">
+        <span class="step-badge">Quick Step</span>
+        <span class="step-text">Open AirMouse3D on phone &rarr; Enter IP: <strong id="footer-ip">192.168.1.44</strong> &rarr; Port: <strong>9000</strong> &rarr; Tap <strong>Connect</strong>.</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

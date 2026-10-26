@@ -50,6 +50,8 @@ class Renderer:
 
     def setup(self):
         """Call once before the render loop starts."""
+        if os.name == "nt" and hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
         sys.stdout.write(_HIDE_CURSOR + _CLEAR)
         sys.stdout.flush()
         self._initialized = True

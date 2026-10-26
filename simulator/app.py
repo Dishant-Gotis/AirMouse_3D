@@ -33,29 +33,36 @@ from simulator.render.renderer import Renderer
 from simulator.math_utils import euler_to_quat
 
 
-# ── Keyboard helper (non-blocking, Linux/macOS) ───────────────────────────────
-import tty
-import termios
-import select
+# ── Keyboard helper (non-blocking, cross-platform) ────────────────────────────
+if os.name == "nt":
+    import msvcrt
+else:
+    import select
+    import termios
+    import tty
 
 class KeyboardPoller:
-    """Non-blocking single-char keyboard reader using raw mode."""
+    """Non-blocking single-character keyboard reader."""
 
     def __init__(self):
         self._old_settings = None
 
     def start(self):
-        fd = sys.stdin.fileno()
-        self._old_settings = termios.tcgetattr(fd)
-        tty.setraw(fd)
+        if os.name != "nt":
+            fd = sys.stdin.fileno()
+            self._old_settings = termios.tcgetattr(fd)
+            tty.setraw(fd)
 
     def stop(self):
-        if self._old_settings:
+        if os.name != "nt" and self._old_settings:
             termios.tcsetattr(sys.stdin.fileno(), termios.TCSADRAIN, self._old_settings)
 
     def read_char(self) -> str:
         """Return a char if one is waiting, else empty string."""
-        if select.select([sys.stdin], [], [], 0)[0]:
+        if os.name == "nt":
+            if msvcrt.kbhit():
+                return msvcrt.getwch()
+        elif select.select([sys.stdin], [], [], 0)[0]:
             return sys.stdin.read(1)
         return ""
 

@@ -1,0 +1,14 @@
+[
+    {
+        "merged": "com.airm.app-mergeDebugResources-31:/layout/activity_controller.xml",
+        "source": "com.airm.app-main-34:/layout/activity_controller.xml"
+    },
+    {
+        "merged": "C:\\Users\\ASUS\\.gradle\\daemon\\9.6.0\\com.airm.app-mergeDebugResources-31:\\layout\\activity_controller.xml",
+        "source": "C:\\Users\\ASUS\\.gradle\\daemon\\9.6.0\\com.airm.app-main-34:\\layout\\activity_controller.xml"
+    },
+    {
+        "merged": "C:\\Users\\ASUS\\.gradle\\daemon\\9.6.0\\com.airm.app-mergeDebugResources-31:\\layout\\activity_connection.xml",
+        "source": "C:\\Users\\ASUS\\.gradle\\daemon\\9.6.0\\com.airm.app-main-34:\\layout\\activity_connection.xml"
+    }
+]
